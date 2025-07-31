@@ -7,100 +7,7 @@ import 'package:provider/provider.dart';
 
 // --- 2. Category Selection Screen ---
 class CategorySelectionScreen extends StatelessWidget {
-  final List<Category> predefinedCategories = [
-    Category(
-      name: 'Movies',
-      words: const [
-        'Titanic',
-        'Avatar',
-        'Star Wars',
-        'Inception',
-        'Jaws',
-        'Lion King',
-        'Forrest Gump',
-        'The Matrix',
-        'Pulp Fiction',
-        'Spirited Away',
-      ],
-    ),
-    Category(
-      name: 'Animals',
-      words: const [
-        'Dog',
-        'Cat',
-        'Elephant',
-        'Lion',
-        'Giraffe',
-        'Monkey',
-        'Dolphin',
-        'Tiger',
-        'Panda',
-        'Kangaroo',
-      ],
-    ),
-    Category(
-      name: 'Sports',
-      words: const [
-        'Basketball',
-        'Soccer',
-        'Tennis',
-        'Swimming',
-        'Baseball',
-        'Golf',
-        'Volleyball',
-        'Boxing',
-        'Skiing',
-        'Cycling',
-      ],
-    ),
-    Category(
-      name: 'Food',
-      words: const [
-        'Pizza',
-        'Burger',
-        'Sushi',
-        'Taco',
-        'Ice Cream',
-        'Spaghetti',
-        'Chocolate',
-        'Donut',
-        'Salad',
-        'Pancake',
-      ],
-    ),
-    Category(
-      name: 'Historical Figures',
-      words: const [
-        'George Washington',
-        'Cleopatra',
-        'Albert Einstein',
-        'Leonardo da Vinci',
-        'Marie Curie',
-        'Martin Luther King Jr.',
-        'Queen Elizabeth I',
-        'Nelson Mandela',
-        'Isaac Newton',
-        'Joan of Arc',
-      ],
-    ),
-    Category(
-      name: 'Pop Culture',
-      words: const [
-        'Harry Potter',
-        'Star Wars',
-        'Beyoncé',
-        'TikTok',
-        'Emoji',
-        'Marvel',
-        'Game of Thrones',
-        'Netflix',
-        'Pokémon',
-        'Fortnite',
-      ],
-    ),
-  ];
-
-  CategorySelectionScreen({super.key});
+  const CategorySelectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -116,8 +23,8 @@ class CategorySelectionScreen extends StatelessWidget {
       body: Consumer<GameSettings>(
         builder: (context, gameSettings, child) {
           final allCategories = [
-            ...predefinedCategories,
             ...gameSettings.customCategories,
+            ...gameSettings.categories,
           ];
 
           if (isLandscape) {
@@ -147,17 +54,53 @@ class CategorySelectionScreen extends StatelessWidget {
                                   color: Theme.of(context).primaryColor,
                                 ), // Blue
                           ),
-                          trailing:
-                              gameSettings.selectedCategory?.name ==
-                                  category.name
-                              ? Icon(
+                          subtitle: Text(
+                            '${category.words.length} words',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey.shade600),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (gameSettings.selectedCategory?.name ==
+                                  category.name)
+                                Icon(
                                   Icons.check_circle,
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.secondary,
-                                  size: 30,
-                                ) // Red
-                              : null,
+                                  size: 28,
+                                ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.edit,
+                                  color: Colors.grey.shade700,
+                                ),
+                                tooltip: 'Edit category',
+                                onPressed: () {
+                                  final index = gameSettings.customCategories
+                                      .indexOf(category);
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/createCategory',
+                                    arguments: {
+                                      'category':
+                                          category, // <-- Pasamos la categoría a editar
+                                      'index': index,
+                                    },
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () {
+                                  final index = gameSettings.customCategories
+                                      .indexOf(category);
+                                  gameSettings.deleteCustomCategory(index);
+                                },
+                              ),
+                            ],
+                          ),
                           onTap: () {
                             gameSettings.selectCategory(category);
                             Navigator.pushNamed(context, '/gameSetup');

@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For HapticFeedback and SystemChrome
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart'; // For State Management
 import 'package:what/core/color.dart';
+import 'package:what/src/models/category.dart';
 import 'package:what/src/screens/categories/category_selection_screen.dart';
 import 'package:what/src/screens/categories/create_custom_category_screen.dart';
-import 'package:what/src/screens/game/countdiwn_screen.dart';
+import 'package:what/src/screens/categories/more_categories_screen.dart';
+import 'package:what/src/screens/game/countdown_screen.dart';
 import 'package:what/src/screens/game/game_over_screen.dart';
 import 'package:what/src/screens/game/game_setup_screen.dart';
 import 'package:what/src/screens/game/gameplay_screen.dart';
@@ -14,10 +17,21 @@ import 'package:what/src/screens/game/how_to_play_screen.dart';
 import 'package:what/src/screens/home/home_screen.dart';
 import 'package:what/src/services/game_settings.dart';
 import 'package:what/src/services/orientation_manager.dart'; // For iOS-style timer
+import 'package:what/src/services/category_service.dart';
 
-void main() {
+void main() async {
   // Ensure Flutter binding is initialized before setting preferred orientations
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Hive.initFlutter();
+  Hive.registerAdapter(CategoryAdapter());
+
+  if (!Hive.isBoxOpen('categories')) {
+    await Hive.openBox<Category>('categories');
+  }
+
+  CustomCategoryService().addPredefinedCategories();
+
   // Start with unlocked orientation
   OrientationManager.unlockOrientation().then((_) {
     runApp(const TempoApp());
@@ -31,7 +45,11 @@ class TempoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => GameSettings(),
+      create: (context) {
+        final settings = GameSettings();
+        settings.init();
+        return settings;
+      },
       child: MaterialApp(
         title: 'Tempo',
         debugShowCheckedModeBanner: false, // Hide debug banner
@@ -189,6 +207,7 @@ class TempoApp extends StatelessWidget {
           '/countdown': (context) => const CountdownScreen(),
           '/gameplay': (context) => GameplayScreen(),
           '/gameOver': (context) => const GameOverScreen(),
+          '/moreCategories': (context) => const MoreCategoriesScreen(),
         },
       ),
     );

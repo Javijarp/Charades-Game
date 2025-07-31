@@ -244,40 +244,53 @@ class _GameplayScreenState extends State<GameplayScreen>
               child: Stack(
                 children: [
                   Center(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder:
-                          (Widget child, Animation<double> animation) {
-                            return ScaleTransition(
-                              scale: CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeOutBack,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            transitionBuilder:
+                                (Widget child, Animation<double> animation) {
+                                  return ScaleTransition(
+                                    scale: CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeOutBack,
+                                    ),
+                                    child: FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                _currentWords[_currentWordIndex],
+                                key: ValueKey<int>(
+                                  _currentWordIndex,
+                                ), // Unique key for animation
+                                style: Theme.of(context).textTheme.displayLarge
+                                    ?.copyWith(
+                                      fontSize: 90,
+                                      color: Colors.white,
+                                      shadows: const [
+                                        Shadow(
+                                          blurRadius: 10.0,
+                                          color: Colors.black38,
+                                          offset: Offset(3.0, 3.0),
+                                        ),
+                                      ],
+                                    ),
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              child: FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              ),
-                            );
-                          },
-                      child: Text(
-                        _currentWords[_currentWordIndex],
-                        key: ValueKey<int>(
-                          _currentWordIndex,
-                        ), // Unique key for animation
-                        style: Theme.of(context).textTheme.displayLarge
-                            ?.copyWith(
-                              fontSize: 90,
-                              color: Colors.white,
-                              shadows: const [
-                                Shadow(
-                                  blurRadius: 10.0,
-                                  color: Colors.black38,
-                                  offset: Offset(3.0, 3.0),
-                                ),
-                              ],
                             ),
-                        textAlign: TextAlign.center,
-                      ),
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                      ],
                     ),
                   ),
                   // Live Timer

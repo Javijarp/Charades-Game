@@ -1,3 +1,19 @@
-[x] UI:
+[ ] UI:
     [x]: Fix titles in portrait mode
     [x]: Fix the spaces with SizedBoxes in portrait mode
+    [ ]: Fix the DEBUG mode bug on the gameplay screen
+    [ ]: Fix spacing between the objects on the game_over_screen
+    [ ]: Fix the spacing issues on the gameplay_screen
+
+[ ]: BUGS
+    [ ]: Category Hive box won't store the built in categories
+    [ ]: Print the categories on the Hive categories box
+
+[ ]: Assignment
+    [ ]: (OPTIONAL) Create a Local Database to store some created online categories tabs
+    [ ]: CRUD Operations:
+        [ ]: Locally store/create some categories onto a database and HIVE
+        [ ]: (OPTIONAL) Add an option to store a locally created category on the online database
+        [ ]: (OPTIONAL) Add an ability to store the local categories on the online database
+    [ ]: Add the google play adds after the gameplay screen pops
+    [ ]: Finish the Figma

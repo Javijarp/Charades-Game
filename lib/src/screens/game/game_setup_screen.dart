@@ -3,7 +3,7 @@ import 'package:what/src/services/unlocked_orientation_mixin.dart';
 import 'package:what/src/widgets/tempo_button.dart';
 import 'package:what/src/services/game_settings.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_cupertino_datetime_picker/flutter_cupertino_datetime_picker.dart';
+import 'package:flutter/cupertino.dart';
 
 // --- 4. Game Setup Screen ---
 class GameSetupScreen extends StatefulWidget {
@@ -31,63 +31,177 @@ class _GameSetupScreenState extends State<GameSetupScreen>
   }
 
   void _showTimePicker(BuildContext context) {
-    DatePicker.showDatePicker(
-      context,
-      pickerTheme: DateTimePickerTheme(
-        showTitle: true,
-        confirm: const Text(
-          'CONFIRM',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        cancel: const Text('CANCEL', style: TextStyle(color: Colors.white70)),
-        itemTextStyle: Theme.of(
-          context,
-        ).textTheme.headlineMedium!.copyWith(fontSize: 35),
-        backgroundColor: Theme.of(context).cardColor,
-      ),
-      dateFormat: 'mm:ss',
-      initialDateTime: DateTime(
-        DateTime.now().year,
-        DateTime.now().month,
-        DateTime.now().day,
-        0,
-        _selectedLocalDuration.inMinutes,
-        _selectedLocalDuration.inSeconds % 60,
-      ),
-      minDateTime: DateTime(
-        DateTime.now().year,
-        DateTime.now().month,
-        DateTime.now().day,
-        0,
-        0,
-        10,
-      ), // Min 10 seconds
-      maxDateTime: DateTime(
-        DateTime.now().year,
-        DateTime.now().month,
-        DateTime.now().day,
-        0,
-        5,
-        0,
-      ), // Max 5 minutes
-      onConfirm: (dateTime, List<int> selectedIndex) {
-        setState(() {
-          _selectedLocalDuration = Duration(
-            minutes: dateTime.minute,
-            seconds: dateTime.second,
-          );
-        });
-        Provider.of<GameSettings>(
-          context,
-          listen: false,
-        ).setGameDuration(_selectedLocalDuration);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Time set to ${_selectedLocalDuration.inMinutes}m ${_selectedLocalDuration.inSeconds % 60}s.',
-              style: const TextStyle(color: Colors.white),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 40.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, -4),
+                ),
+              ],
             ),
-            backgroundColor: Theme.of(context).colorScheme.secondary,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 5,
+                  margin: const EdgeInsets.only(bottom: 18),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                Text(
+                  'Set Round Time',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Minutes Picker
+                    Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      child: SizedBox(
+                        width: 90,
+                        height: 180,
+                        child: CupertinoPicker(
+                          scrollController: FixedExtentScrollController(
+                            initialItem: _selectedLocalDuration.inMinutes,
+                          ),
+                          itemExtent: 40,
+                          onSelectedItemChanged: (int value) {
+                            setState(() {
+                              _selectedLocalDuration = Duration(
+                                minutes: value,
+                                seconds: _selectedLocalDuration.inSeconds % 60,
+                              );
+                              // Clamp to max 10:00
+                              if (_selectedLocalDuration.inMinutes == 10) {
+                                _selectedLocalDuration = Duration(
+                                  minutes: 10,
+                                  seconds: 0,
+                                );
+                              }
+                              // Clamp to min 0:10
+                              if (_selectedLocalDuration.inMinutes == 0 &&
+                                  _selectedLocalDuration.inSeconds < 10) {
+                                _selectedLocalDuration = Duration(seconds: 10);
+                              }
+                            });
+                            Provider.of<GameSettings>(
+                              context,
+                              listen: false,
+                            ).setGameDuration(_selectedLocalDuration);
+                          },
+                          children: List<Widget>.generate(11, (int index) {
+                            return Center(
+                              child: Text(
+                                index.toString().padLeft(2, '0'),
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Container(
+                        width: 32,
+                        height: 2,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.3),
+                        margin: const EdgeInsets.only(bottom: 8),
+                      ),
+                    ),
+                    // Seconds Picker
+                    Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      child: SizedBox(
+                        width: 90,
+                        height: 180,
+                        child: CupertinoPicker(
+                          scrollController: FixedExtentScrollController(
+                            initialItem: _selectedLocalDuration.inSeconds % 60,
+                          ),
+                          itemExtent: 40,
+                          onSelectedItemChanged: (int value) {
+                            setState(() {
+                              _selectedLocalDuration = Duration(
+                                minutes: _selectedLocalDuration.inMinutes,
+                                seconds: value,
+                              );
+                              // Clamp to max 10:00
+                              if (_selectedLocalDuration.inMinutes == 10) {
+                                _selectedLocalDuration = Duration(
+                                  minutes: 10,
+                                  seconds: 0,
+                                );
+                              }
+                              // Clamp to min 0:10
+                              if (_selectedLocalDuration.inMinutes == 0 &&
+                                  _selectedLocalDuration.inSeconds < 10) {
+                                _selectedLocalDuration = Duration(seconds: 10);
+                              }
+                            });
+                            Provider.of<GameSettings>(
+                              context,
+                              listen: false,
+                            ).setGameDuration(_selectedLocalDuration);
+                          },
+                          children: List<Widget>.generate(60, (int index) {
+                            return Center(
+                              child: Text(
+                                index.toString().padLeft(2, '0'),
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+              ],
+            ),
           ),
         );
       },
@@ -129,22 +243,18 @@ class _GameSetupScreenState extends State<GameSetupScreen>
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontSize: isLandscape ? 32 : 40,
                     color: Theme.of(context).colorScheme.primary, // Blue
-                    decoration: TextDecoration.underline,
-                    decorationColor: Theme.of(
-                      context,
-                    ).colorScheme.tertiary, // Blue
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              SizedBox(height: isLandscape ? 20 : 30),
+              SizedBox(height: isLandscape ? 5 : 30),
               Text(
                 'Time per Round:',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(color: Colors.black87),
               ),
-              SizedBox(height: isLandscape ? 8 : 10),
+              SizedBox(height: isLandscape ? 5 : 10),
               GestureDetector(
                 onTap: () => _showTimePicker(context),
                 child: Container(
@@ -174,7 +284,7 @@ class _GameSetupScreenState extends State<GameSetupScreen>
                   ),
                 ),
               ),
-              SizedBox(height: isLandscape ? 30 : 40),
+              SizedBox(height: isLandscape ? 5 : 40),
               TempoButton(
                 text: 'START GAME',
                 onPressed: gameSettings.selectedCategory != null

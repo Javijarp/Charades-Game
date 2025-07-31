@@ -10,6 +10,8 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -35,7 +37,7 @@ class HomeScreen extends StatelessWidget {
                   letterSpacing: 5,
                 ),
               ),
-              const SizedBox(height: 20), // Increased spacing
+              SizedBox(height: isLandscape ? 20 : 40), // Increased spacing
               Text(
                 'Charades Unleashed',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -43,7 +45,7 @@ class HomeScreen extends StatelessWidget {
                   fontSize: 20,
                 ),
               ),
-              const SizedBox(height: 80), // Increased spacing
+              SizedBox(height: isLandscape ? 20 : 80), // Increased spacing
               TempoButton(
                 text: 'START GAME',
                 onPressed: () {
