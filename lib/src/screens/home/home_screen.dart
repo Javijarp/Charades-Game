@@ -15,7 +15,7 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           // gradient: LinearGradient(
           //   colors: [
           //     Theme.of(context).colorScheme.primary.withOpacity(0.9), // Blue
@@ -32,7 +32,7 @@ class HomeScreen extends StatelessWidget {
               Text(
                 'TEMPO',
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: Colors.blueGrey.shade900,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 90,
                   letterSpacing: 5,
                 ),

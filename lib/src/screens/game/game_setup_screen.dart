@@ -229,9 +229,9 @@ class _GameSetupScreenState extends State<GameSetupScreen>
             children: [
               Text(
                 'Selected Category:',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(color: Colors.black87),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               SizedBox(height: isLandscape ? 8 : 10),
               GestureDetector(
@@ -250,9 +250,9 @@ class _GameSetupScreenState extends State<GameSetupScreen>
               SizedBox(height: isLandscape ? 5 : 30),
               Text(
                 'Time per Round:',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(color: Colors.black87),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               SizedBox(height: isLandscape ? 5 : 10),
               GestureDetector(

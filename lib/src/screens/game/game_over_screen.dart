@@ -19,6 +19,9 @@ class _GameOverScreenState extends State<GameOverScreen>
     final gameSettings = Provider.of<GameSettings>(context);
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
+    print(
+      "GameOverScreen: \n Correct Answers: ${gameSettings.correctAnswers}\n Passes: ${gameSettings.passes}",
+    );
 
     return Scaffold(
       body: Container(
@@ -43,12 +46,12 @@ class _GameOverScreenState extends State<GameOverScreen>
                     Text(
                       'TIME\'S UP!',
                       style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        color: Colors.redAccent.shade100,
+                        color: Colors.white,
                         fontSize: isLandscape ? 80 : 50,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: isLandscape ? 20 : 50),
+                    SizedBox(height: isLandscape ? 5 : 50),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -57,8 +60,13 @@ class _GameOverScreenState extends State<GameOverScreen>
                           child: ScoreDisplay(
                             label: 'CORRECT',
                             score: gameSettings.correctAnswers,
-                            color: Theme.of(context).colorScheme.secondary,
+                            color: (gameSettings.correctAnswers > 0)
+                                ? const Color.fromARGB(255, 46, 227, 140)
+                                : Theme.of(context).colorScheme.secondary,
                             isLandscape: isLandscape,
+                            fontSize: (gameSettings.correctAnswers > 10)
+                                ? 100
+                                : 90,
                           ),
                         ),
                         SizedBox(width: isLandscape ? 8 : 24), // Reducido
@@ -66,8 +74,11 @@ class _GameOverScreenState extends State<GameOverScreen>
                           child: ScoreDisplay(
                             label: 'PASSES',
                             score: gameSettings.passes,
-                            color: Theme.of(context).colorScheme.tertiary,
+                            color: (gameSettings.passes > 0)
+                                ? Colors.blueAccent
+                                : Theme.of(context).colorScheme.secondary,
                             isLandscape: isLandscape,
+                            fontSize: (gameSettings.passes > 10) ? 100 : 90,
                           ),
                         ),
                       ],
@@ -77,7 +88,7 @@ class _GameOverScreenState extends State<GameOverScreen>
                     // Botones alineados horizontalmente o verticalmente según orientación
                     Wrap(
                       alignment: WrapAlignment.center,
-                      spacing: isLandscape ? 12 : 8,
+                      spacing: isLandscape ? 8 : 8,
                       runSpacing: 10,
                       children: [
                         TempoButton(

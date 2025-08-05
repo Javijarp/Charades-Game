@@ -1,13 +1,12 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:what/src/services/game_settings.dart';
 import 'package:what/src/services/orientation_manager.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:audioplayers/audioplayers.dart';
 
-// --- 6. Gameplay Screen ---
 class GameplayScreen extends StatefulWidget {
   const GameplayScreen({super.key});
 
@@ -23,19 +22,24 @@ class _GameplayScreenState extends State<GameplayScreen>
   late int _remainingSeconds;
   late AnimationController _timerAnimationController;
   bool _waitedForOrientation = false;
-
-  bool _isTiltDebounced = false; // For debouncing tilt input
+  bool _isTiltDebounced = false;
   static const Duration _debounceDuration = Duration(milliseconds: 500);
-  bool _gameEnded = false; // Prevent multiple game end triggers
+  bool _gameEnded = false;
   bool _resourcesDisposed = false;
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+
+  // Feedback
+  String? _feedbackType;
+  bool _showingFeedback = false;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await OrientationManager.lockToLandscape();
-      await Future.delayed(const Duration(milliseconds: 350));
+      await Future.delayed(const Duration(milliseconds: 100));
       if (mounted) setState(() => _waitedForOrientation = true);
       Provider.of<GameSettings>(
         context,
@@ -46,7 +50,7 @@ class _GameplayScreenState extends State<GameplayScreen>
     try {
       _gameSettings = Provider.of<GameSettings>(context, listen: false);
       _currentWords = List.from(_gameSettings.selectedCategory!.words)
-        ..shuffle(); // Shuffle words
+        ..shuffle();
       _currentWordIndex = 0;
       _remainingSeconds = _gameSettings.gameDuration.inSeconds;
 
@@ -54,79 +58,68 @@ class _GameplayScreenState extends State<GameplayScreen>
           AnimationController(vsync: this, duration: _gameSettings.gameDuration)
             ..addListener(() {
               if (!mounted || _resourcesDisposed) return;
-              try {
-                setState(() {
-                  _remainingSeconds =
-                      _gameSettings.gameDuration.inSeconds -
-                      (_timerAnimationController.value *
-                              _gameSettings.gameDuration.inSeconds)
-                          .round();
-                });
-                if (_remainingSeconds <= 0 && !_gameEnded) {
-                  _gameEnded = true;
-                  _timerAnimationController.stop();
-                  // Instead of post-frame, do navigation directly if safe
-                  _endGameAndNavigate();
-                }
-              } catch (e, stack) {
-                print('Error in timer animation: $e\n$stack');
+              setState(() {
+                _remainingSeconds =
+                    _gameSettings.gameDuration.inSeconds -
+                    (_timerAnimationController.value *
+                            _gameSettings.gameDuration.inSeconds)
+                        .round();
+              });
+              if (_remainingSeconds <= 0 && !_gameEnded) {
+                _gameEnded = true;
+                _timerAnimationController.stop();
+                _endGameAndNavigate();
               }
             });
+
       _timerAnimationController.forward();
 
-      try {
-        _accelerometerSubscription = accelerometerEvents.listen((
-          AccelerometerEvent event,
-        ) {
-          if (!mounted ||
-              _isTiltDebounced ||
-              _remainingSeconds <= 0 ||
-              _gameEnded ||
-              _resourcesDisposed)
-            return;
+      _accelerometerSubscription = accelerometerEvents.listen((event) async {
+        if (!mounted ||
+            _isTiltDebounced ||
+            _remainingSeconds <= 0 ||
+            _gameEnded ||
+            _resourcesDisposed) {
+          return;
+        }
 
-          try {
-            const double tiltThreshold = 7.0; // Adjust for sensitivity
+        const double tiltThreshold = 5.0;
+        const double strongTiltThreshold = 8.0;
 
-            if (event.y > tiltThreshold) {
-              _gameSettings.incrementCorrect();
-              HapticFeedback.lightImpact();
-              _debounceTilt();
-              _moveToNextWord();
-            } else if (event.y < -tiltThreshold) {
-              _gameSettings.incrementPass();
-              HapticFeedback.mediumImpact();
-              _debounceTilt();
-              _moveToNextWord();
-            }
-          } catch (e, stack) {
-            print('Error in accelerometer listener: $e\n$stack');
-          }
-        });
-      } catch (e, stack) {
-        print(
-          'Error setting up accelerometer: $e - This is normal on iOS simulator\n$stack',
-        );
-        // Continue without accelerometer - app will still work
-      }
+        if (event.z < -tiltThreshold) {
+          final isForceful = event.z < -strongTiltThreshold;
+          _gameSettings.incrementPass();
+          await playFeedback("pass", isForceful: isForceful);
+          _debounceTilt();
+          _moveToNextWordWithFeedback("pass");
+        } else if (event.z > tiltThreshold) {
+          final isForceful = event.z > strongTiltThreshold;
+          _gameSettings.incrementCorrect();
+          await playFeedback("correct", isForceful: isForceful);
+          _debounceTilt();
+          _moveToNextWordWithFeedback("correct");
+        }
+      });
     } catch (e, stack) {
       print('Error initializing gameplay screen: $e\n$stack');
     }
   }
 
-  void _endGameAndNavigate() {
-    if (!mounted) return;
+  Future<void> playFeedback(String type, {required bool isForceful}) async {
     try {
-      print('[DEBUG] Disposing gameplay resources before navigation');
-      _disposeGameplayResources();
-      _gameSettings.setGameLandscapeMode(false);
-      if (mounted) {
-        print('[DEBUG] Navigating to /gameOver');
-        Navigator.of(context).pushReplacementNamed('/gameOver');
-        print('[DEBUG] Navigation to /gameOver complete');
+      final audioPath = 'assets/sounds/${type.toLowerCase()}.mp3';
+      await _audioPlayer.stop();
+      await _audioPlayer.play(AssetSource(audioPath.split('assets/').last));
+
+      if (isForceful) {
+        HapticFeedback.heavyImpact();
+      } else {
+        type == 'correct'
+            ? HapticFeedback.mediumImpact()
+            : HapticFeedback.lightImpact();
       }
-    } catch (e, stack) {
-      print('Error navigating to game over: $e\n$stack');
+    } catch (e) {
+      print('Failed to play $type feedback: $e');
     }
   }
 
@@ -139,47 +132,48 @@ class _GameplayScreenState extends State<GameplayScreen>
     });
   }
 
-  void _moveToNextWord() {
+  void _moveToNextWordWithFeedback(String feedbackType) {
     if (!mounted || _resourcesDisposed) return;
-    try {
+
+    setState(() {
+      _feedbackType = feedbackType;
+      _showingFeedback = true;
+    });
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted || _resourcesDisposed) return;
       setState(() {
+        _feedbackType = null;
+        _showingFeedback = false;
         _currentWordIndex = (_currentWordIndex + 1) % _currentWords.length;
         if (_currentWordIndex == 0 && _currentWords.length > 1) {
           _currentWords.shuffle();
         }
       });
-    } catch (e, stack) {
-      print('Error moving to next word: $e\n$stack');
-    }
+    });
+  }
+
+  void _endGameAndNavigate() {
+    if (!mounted) return;
+    _disposeGameplayResources();
+    _gameSettings.setGameLandscapeMode(false);
+    Navigator.of(context).pushReplacementNamed('/gameOver');
   }
 
   void _disposeGameplayResources() {
     if (_resourcesDisposed) return;
     _resourcesDisposed = true;
 
-    try {
-      print('[DEBUG] Disposing timer animation controller');
-      if (_timerAnimationController.isAnimating) {
-        _timerAnimationController.stop();
-      }
-      _timerAnimationController.dispose();
-      print('[DEBUG] Timer animation controller disposed');
-    } catch (e, stack) {
-      print('Error disposing animation controller: $e\n$stack');
+    if (_timerAnimationController.isAnimating) {
+      _timerAnimationController.stop();
     }
-
-    try {
-      print('[DEBUG] Canceling accelerometer subscription');
-      _accelerometerSubscription?.cancel();
-      print('[DEBUG] Accelerometer subscription canceled');
-    } catch (e, stack) {
-      print('Error canceling accelerometer subscription: $e\n$stack');
-    }
+    _timerAnimationController.dispose();
+    _accelerometerSubscription?.cancel();
+    _audioPlayer.dispose();
   }
 
   @override
   void dispose() {
-    // _gameSettings.setGameLandscapeMode(false);
     _disposeGameplayResources();
     super.dispose();
   }
@@ -190,17 +184,15 @@ class _GameplayScreenState extends State<GameplayScreen>
     final isLandscape =
         gameSettings.isGameLandscapeMode ||
         MediaQuery.of(context).orientation == Orientation.landscape;
-    final deviceIsLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
-    if (!_waitedForOrientation || !deviceIsLandscape) {
-      // Block gameplay UI until device is physically in landscape
+
+    if (!_waitedForOrientation || !isLandscape) {
       return Scaffold(
         body: Container(
           color: Colors.black,
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
+              children: const [
                 Icon(Icons.screen_rotation, color: Colors.white, size: 80),
                 SizedBox(height: 20),
                 Text(
@@ -218,7 +210,7 @@ class _GameplayScreenState extends State<GameplayScreen>
         ),
       );
     }
-    // Responsive layout for gameplay UI
+
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -230,12 +222,8 @@ class _GameplayScreenState extends State<GameplayScreen>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.9), // Blue
-                    Theme.of(
-                      context,
-                    ).colorScheme.secondary.withOpacity(0.9), // Red
+                    Theme.of(context).colorScheme.primary.withOpacity(0.9),
+                    Theme.of(context).colorScheme.secondary.withOpacity(0.9),
                   ],
                   begin: Alignment.topRight,
                   end: Alignment.bottomLeft,
@@ -243,57 +231,82 @@ class _GameplayScreenState extends State<GameplayScreen>
               ),
               child: Stack(
                 children: [
-                  Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(width: 24),
-                        Expanded(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            transitionBuilder:
-                                (Widget child, Animation<double> animation) {
-                                  return ScaleTransition(
-                                    scale: CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeOutBack,
-                                    ),
-                                    child: FadeTransition(
-                                      opacity: animation,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                _currentWords[_currentWordIndex],
-                                key: ValueKey<int>(
-                                  _currentWordIndex,
-                                ), // Unique key for animation
-                                style: Theme.of(context).textTheme.displayLarge
-                                    ?.copyWith(
-                                      fontSize: 90,
-                                      color: Colors.white,
-                                      shadows: const [
-                                        Shadow(
-                                          blurRadius: 10.0,
-                                          color: Colors.black38,
-                                          offset: Offset(3.0, 3.0),
-                                        ),
-                                      ],
-                                    ),
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
+                  // Instructions
+                  _buildInstructions(),
+
+                  // Feedback Overlay
+                  if (_showingFeedback && _feedbackType != null)
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _feedbackType == "correct"
+                              ? Colors.green.withOpacity(0.8)
+                              : Colors.orange.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          _feedbackType == "correct" ? "CORRECT!" : "PASS!",
+                          style: const TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 10,
+                                color: Colors.black45,
+                                offset: Offset(2, 2),
                               ),
-                            ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 24),
-                      ],
+                      ),
+                    ),
+
+                  // Word
+                  Center(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) {
+                        return ScaleTransition(
+                          scale: CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutBack,
+                          ),
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _currentWords[_currentWordIndex],
+                          key: ValueKey<int>(_currentWordIndex),
+                          style: Theme.of(context).textTheme.displayLarge
+                              ?.copyWith(
+                                fontSize: 90,
+                                color: Colors.white,
+                                shadows: const [
+                                  Shadow(
+                                    blurRadius: 10.0,
+                                    color: Colors.black38,
+                                    offset: Offset(3.0, 3.0),
+                                  ),
+                                ],
+                              ),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ),
                   ),
-                  // Live Timer
+
+                  // Timer
                   Align(
                     alignment: Alignment.topCenter,
                     child: Padding(
@@ -306,66 +319,16 @@ class _GameplayScreenState extends State<GameplayScreen>
                           color: _remainingSeconds <= 10
                               ? Colors.redAccent.shade400
                               : Colors.white,
-                          shadows: [
-                            if (_remainingSeconds <= 10)
-                              const Shadow(
-                                blurRadius: 8.0,
-                                color: Colors.white,
-                                offset: Offset(0, 0),
-                              ),
-                          ],
+                          shadows: _remainingSeconds <= 10
+                              ? const [
+                                  Shadow(
+                                    blurRadius: 8.0,
+                                    color: Colors.white,
+                                    offset: Offset(0, 0),
+                                  ),
+                                ]
+                              : [],
                         ),
-                      ),
-                    ),
-                  ),
-                  // Score Counter
-                  Consumer<GameSettings>(
-                    builder: (context, gameSettings, child) {
-                      return Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // ... existing code ...
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  // Subtle Gyroscope Instructions (optional, could fade out after initial seconds)
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.arrow_upward,
-                            size: 40,
-                            color: Colors.white54,
-                          ),
-                          Text(
-                            'Pass',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: Colors.white54),
-                          ),
-                          const SizedBox(height: 10),
-                          Icon(
-                            Icons.arrow_downward,
-                            size: 40,
-                            color: Colors.white54,
-                          ),
-                          Text(
-                            'Correct',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: Colors.white54),
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -376,5 +339,9 @@ class _GameplayScreenState extends State<GameplayScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildInstructions() {
+    return Container();
   }
 }

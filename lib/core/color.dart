@@ -1,5 +1,4 @@
 // --- Color Palette ---
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -14,3 +13,4 @@ const Color kDarkPrimary = Color(0xFF42A5F5); // Lighter Blue
 const Color kDarkSecondary = Color(0xFFFF5252); // Bright Red
 const Color kDarkSurface = Color(0xFF23272F);
 const Color kDarkOnSurface = Colors.white;
+const Color Title = Color.fromRGBO(38, 50, 56, 1);

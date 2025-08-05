@@ -5,12 +5,14 @@ class ScoreDisplay extends StatelessWidget {
   final int score;
   final Color color;
   final bool isLandscape;
+  final double fontSize;
 
   const ScoreDisplay({
     super.key,
     required this.label,
     required this.score,
     required this.color,
+    this.fontSize = 32,
     this.isLandscape = false,
   });
 
@@ -21,13 +23,13 @@ class ScoreDisplay extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.white,
             fontSize: isLandscape ? 24 : 32,
           ),
         ),
         Container(
           padding: EdgeInsets.symmetric(
-            horizontal: isLandscape ? 24 : 32,
+            horizontal: isLandscape ? 16 : 20,
             vertical: isLandscape ? 16 : 20,
           ),
           decoration: BoxDecoration(
@@ -49,7 +51,7 @@ class ScoreDisplay extends StatelessWidget {
                 score.toString(),
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
                   color: color,
-                  fontSize: isLandscape ? 100 : 120,
+                  fontSize: fontSize,
                   shadows: [
                     Shadow(
                       color: Colors.black.withOpacity(0.3),

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:what/src/models/category.dart';
 import 'package:what/src/services/game_settings.dart';
 import 'package:what/src/widgets/tempo_button.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 // --- 2. Category Selection Screen ---
 class CategorySelectionScreen extends StatelessWidget {
@@ -22,10 +21,7 @@ class CategorySelectionScreen extends StatelessWidget {
       ),
       body: Consumer<GameSettings>(
         builder: (context, gameSettings, child) {
-          final allCategories = [
-            ...gameSettings.customCategories,
-            ...gameSettings.categories,
-          ];
+          final allCategories = gameSettings.allCategories;
 
           if (isLandscape) {
             // Landscape layout: side-by-side
@@ -34,77 +30,52 @@ class CategorySelectionScreen extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 5.0),
                     itemCount: allCategories.length,
                     itemBuilder: (context, index) {
                       final category = allCategories[index];
+
                       return Card(
-                        color: Colors.white,
+                        color: Colors.black,
                         elevation: 8,
-                        margin: const EdgeInsets.symmetric(vertical: 10.0),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          title: Text(
-                            category.name,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  color: Theme.of(context).primaryColor,
-                                ), // Blue
-                          ),
-                          subtitle: Text(
-                            '${category.words.length} words',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.grey.shade600),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        margin: const EdgeInsets.symmetric(vertical: 5.0),
+                        child: Slidable(
+                          key: ValueKey(category.name),
+                          startActionPane: ActionPane(
+                            motion: const ScrollMotion(),
                             children: [
-                              if (gameSettings.selectedCategory?.name ==
-                                  category.name)
-                                Icon(
-                                  Icons.check_circle,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondary,
-                                  size: 28,
-                                ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.edit,
-                                  color: Colors.grey.shade700,
-                                ),
-                                tooltip: 'Edit category',
-                                onPressed: () {
-                                  final index = gameSettings.customCategories
-                                      .indexOf(category);
+                              SlidableAction(
+                                onPressed: (_) {
                                   Navigator.pushNamed(
                                     context,
                                     '/createCategory',
                                     arguments: {
-                                      'category':
-                                          category, // <-- Pasamos la categoría a editar
+                                      'category': category,
                                       'index': index,
                                     },
                                   );
                                 },
+                                backgroundColor: Colors.blueGrey,
+                                foregroundColor: Colors.white,
+                                icon: Icons.edit,
+                                label: 'Edit',
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  final index = gameSettings.customCategories
-                                      .indexOf(category);
-                                  gameSettings.deleteCustomCategory(index);
+                              SlidableAction(
+                                onPressed: (_) {
+                                  gameSettings.deleteCategory(index);
                                 },
+                                backgroundColor: Colors.redAccent,
+                                foregroundColor: Colors.white,
+                                icon: Icons.delete,
+                                label: 'Delete',
                               ),
                             ],
                           ),
-                          onTap: () {
-                            gameSettings.selectCategory(category);
-                            Navigator.pushNamed(context, '/gameSetup');
-                          },
+                          child: _buildListTile(
+                            context,
+                            category,
+                            gameSettings,
+                          ),
                         ),
                       );
                     },
@@ -132,7 +103,9 @@ class CategorySelectionScreen extends StatelessWidget {
                           'Choose from predefined categories or create your own!',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: Colors.blueGrey.shade500),
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                         ),
                       ],
                     ),
@@ -146,46 +119,58 @@ class CategorySelectionScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 5.0),
                     itemCount: allCategories.length,
                     itemBuilder: (context, index) {
                       final category = allCategories[index];
+
                       return Card(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         elevation: 8,
-                        margin: const EdgeInsets.symmetric(vertical: 10.0),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          title: Text(
-                            category.name,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  color: Theme.of(context).primaryColor,
-                                ), // Blue
-                          ),
-                          trailing:
-                              gameSettings.selectedCategory?.name ==
-                                  category.name
-                              ? Icon(
-                                  Icons.check_circle,
-                                  color: Theme.of(
+                        margin: const EdgeInsets.symmetric(vertical: 5.0),
+                        child: Slidable(
+                          key: ValueKey(category.name),
+                          startActionPane: ActionPane(
+                            motion: const ScrollMotion(),
+                            children: [
+                              SlidableAction(
+                                onPressed: (_) {
+                                  Navigator.pushNamed(
                                     context,
-                                  ).colorScheme.secondary,
-                                  size: 30,
-                                ) // Red
-                              : null,
-                          onTap: () {
-                            gameSettings.selectCategory(category);
-                            Navigator.pushNamed(context, '/gameSetup');
-                          },
+                                    '/createCategory',
+                                    arguments: {
+                                      'category': category,
+                                      'index': index,
+                                    },
+                                  );
+                                },
+                                backgroundColor: Colors.blueGrey,
+                                foregroundColor: Colors.white,
+                                icon: Icons.edit,
+                                label: 'Edit',
+                              ),
+                              SlidableAction(
+                                onPressed: (_) {
+                                  gameSettings.deleteCategory(index);
+                                },
+                                backgroundColor: Colors.redAccent,
+                                foregroundColor: Colors.white,
+                                icon: Icons.delete,
+                                label: 'Delete',
+                              ),
+                            ],
+                          ),
+                          child: _buildListTile(
+                            context,
+                            category,
+                            gameSettings,
+                          ),
                         ),
                       );
                     },
                   ),
                 ),
+                Divider(color: Colors.grey.shade900, thickness: 5),
                 Container(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
@@ -205,9 +190,9 @@ class CategorySelectionScreen extends StatelessWidget {
                       Text(
                         'Choose from predefined categories or create your own!',
                         textAlign: TextAlign.center,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ],
                   ),
@@ -217,6 +202,39 @@ class CategorySelectionScreen extends StatelessWidget {
           }
         },
       ),
+    );
+  }
+
+  Widget _buildListTile(
+    BuildContext context,
+    dynamic category,
+    GameSettings gameSettings,
+  ) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+      title: Text(
+        category.name,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          color: Theme.of(context).primaryColor,
+        ), // Blue
+      ),
+      subtitle: Text(
+        '${category.words.length} words',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
+      trailing: gameSettings.selectedCategory?.name == category.name
+          ? Icon(
+              Icons.check_circle,
+              color: Theme.of(context).colorScheme.secondary,
+              size: 28,
+            )
+          : null,
+      onTap: () {
+        gameSettings.selectCategory(category);
+        Navigator.pushNamed(context, '/gameSetup');
+      },
     );
   }
 }

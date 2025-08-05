@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For HapticFeedback and SystemChrome
 import 'package:hive_flutter/hive_flutter.dart';
@@ -127,74 +125,97 @@ class TempoApp extends StatelessWidget {
         ),
         darkTheme: ThemeData(
           brightness: Brightness.dark,
+          useMaterial3: true,
           primaryColor: kDarkPrimary,
+          scaffoldBackgroundColor: kDarkBackground,
+          fontFamily: 'Montserrat',
           colorScheme: ColorScheme(
             brightness: Brightness.dark,
             primary: kDarkPrimary,
-            onPrimary: Colors.white,
+            onPrimary: Colors.black,
             secondary: kDarkSecondary,
-            onSecondary: Colors.white,
+            onSecondary: Colors.black,
             error: Colors.redAccent,
             onError: Colors.white,
             surface: kDarkSurface,
             onSurface: kDarkOnSurface,
           ),
-          scaffoldBackgroundColor: kDarkBackground,
-          fontFamily: 'Montserrat',
+          appBarTheme: AppBarTheme(
+            backgroundColor: kDarkSurface,
+            foregroundColor: Colors.white,
+            elevation: 4,
+            centerTitle: true,
+            titleTextStyle: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+            systemOverlayStyle: SystemUiOverlayStyle.light,
+          ),
+          cardTheme: CardThemeData(
+            color: kDarkSurface,
+            elevation: 6,
+            shadowColor: Colors.black.withOpacity(0.4),
+            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
           textTheme: const TextTheme(
             displayLarge: TextStyle(
               fontSize: 84.0,
               fontWeight: FontWeight.w900,
-              color: kDarkPrimary,
+              color: Colors.white,
             ),
             headlineMedium: TextStyle(
               fontSize: 48.0,
               fontWeight: FontWeight.bold,
-              color: kDarkSecondary,
+              color: Colors.white70,
             ),
             titleLarge: TextStyle(
-              fontSize: 28.0,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+              fontSize: 24.0,
+              fontWeight: FontWeight.w600,
+              color: Color.fromRGBO(38, 50, 56, 1),
             ),
-            bodyMedium: TextStyle(fontSize: 16.0, color: Colors.white),
+            bodyMedium: TextStyle(fontSize: 16.0, color: Colors.white70),
             labelLarge: TextStyle(
-              fontSize: 22.0,
+              fontSize: 18.0,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: kDarkSecondary, // Red
+              backgroundColor: kDarkSecondary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 18),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(28),
               ),
               elevation: 5,
               textStyle: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(
-              foregroundColor: kDarkPrimary, // Blue
+              foregroundColor: kDarkPrimary,
               textStyle: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          cardTheme: CardThemeData(
-            color: kDarkSurface,
-            elevation: 8,
+          listTileTheme: const ListTileThemeData(
+            tileColor: Color(0xFF2A2D36),
+            iconColor: Colors.white70,
+            textColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
-            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
         ),
         initialRoute: '/',

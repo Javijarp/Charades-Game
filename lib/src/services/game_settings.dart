@@ -13,9 +13,6 @@ class GameSettings with ChangeNotifier {
   ); // Default to 1:30
   int _correctAnswers = 0;
   int _passes = 0;
-  final List<Category> _customCategories = []; // To store custom categories
-  final List<Category> categories = CustomCategoryService()
-      .getAllCategories(); // To store custom categories
   bool _isGameLandscapeMode =
       false; // Track if game is in landscape-locked mode
 
@@ -26,33 +23,50 @@ class GameSettings with ChangeNotifier {
   bool get isGameLandscapeMode => _isGameLandscapeMode;
 
   Box<Category>? _categoryBox;
-  List<Category> get customCategories => _customCategories;
+
+  // Get all categories from Hive box
+  List<Category> get allCategories => _categoryBox?.values.toList() ?? [];
+
+  // Get only custom categories
+  List<Category> get customCategories =>
+      _categoryBox?.values.where((c) => c.isCustom).toList() ?? [];
 
   Future<void> init() async {
     _categoryBox = Hive.box<Category>('categories');
-    _customCategories.clear();
-    _customCategories.addAll(_categoryBox!.values.where((c) => c.isCustom));
     notifyListeners();
   }
 
   void addCustomCategory(Category category) {
     _categoryBox?.add(category);
-    _customCategories.add(category);
     notifyListeners();
   }
 
-  void updateCustomCategory(int index, Category updated) {
-    final key = _categoryBox!.keyAt(index);
-    _categoryBox!.put(key, updated);
-    _customCategories[index] = updated;
-    notifyListeners();
+  void updateCategory(int index, Category updated) {
+    if (index >= 0 && index < _categoryBox!.length) {
+      final key = _categoryBox!.keyAt(index);
+      _categoryBox!.put(key, updated);
+      notifyListeners();
+    }
   }
 
-  void deleteCustomCategory(int index) {
-    final key = _categoryBox!.keyAt(index);
-    _categoryBox!.delete(key);
-    _customCategories.removeAt(index);
-    notifyListeners();
+  void deleteCategory(int index) {
+    if (index >= 0 && index < _categoryBox!.length) {
+      final key = _categoryBox!.keyAt(index);
+      _categoryBox!.delete(key);
+      notifyListeners();
+    }
+  }
+
+  // Helper method to find category index by name
+  int? findCategoryIndexByName(String name) {
+    final keys = _categoryBox?.keys.toList() ?? [];
+    for (int i = 0; i < keys.length; i++) {
+      final category = _categoryBox?.get(keys[i]);
+      if (category?.name == name) {
+        return i;
+      }
+    }
+    return null;
   }
 
   void selectCategory(Category category) {

@@ -19,12 +19,34 @@ class _CreateCustomCategoryScreenState extends State<CreateCustomCategoryScreen>
   final _categoryNameController = TextEditingController();
   final _wordListController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  Category? _editingCategory;
+  int? _editingIndex;
 
   @override
   void dispose() {
     _categoryNameController.dispose();
     _wordListController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Delay argument access until after build context is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+      if (args != null && args.containsKey('category')) {
+        _editingCategory = args['category'] as Category;
+        _editingIndex = args['index'] as int;
+
+        // Fill the form with existing data
+        _categoryNameController.text = _editingCategory!.name;
+        _wordListController.text = _editingCategory!.words.join(', ');
+      }
+    });
   }
 
   void _saveCategory() {
@@ -55,10 +77,13 @@ class _CreateCustomCategoryScreenState extends State<CreateCustomCategoryScreen>
         words: words,
         isCustom: true,
       );
-      Provider.of<GameSettings>(
-        context,
-        listen: false,
-      ).addCustomCategory(newCategory);
+      final gameSettings = Provider.of<GameSettings>(context, listen: false);
+
+      if (_editingIndex != null) {
+        gameSettings.updateCategory(_editingIndex!, newCategory);
+      } else {
+        gameSettings.addCustomCategory(newCategory);
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -120,7 +145,7 @@ class _CreateCustomCategoryScreenState extends State<CreateCustomCategoryScreen>
                           borderRadius: BorderRadius.circular(10),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade100,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -142,7 +167,7 @@ class _CreateCustomCategoryScreenState extends State<CreateCustomCategoryScreen>
                           borderRadius: BorderRadius.circular(10),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade100,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
