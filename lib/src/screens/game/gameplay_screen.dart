@@ -33,6 +33,10 @@ class _GameplayScreenState extends State<GameplayScreen>
   bool _showingFeedback = false;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
+  // Background color animation
+  Color _backgroundColor = Colors.transparent;
+  bool _isBackgroundAnimating = false;
+
   @override
   void initState() {
     super.initState();
@@ -83,8 +87,8 @@ class _GameplayScreenState extends State<GameplayScreen>
           return;
         }
 
-        const double tiltThreshold = 5.0;
-        const double strongTiltThreshold = 8.0;
+        const double tiltThreshold = 8.0;
+        const double strongTiltThreshold = 12.0;
 
         if (event.z < -tiltThreshold) {
           final isForceful = event.z < -strongTiltThreshold;
@@ -138,6 +142,14 @@ class _GameplayScreenState extends State<GameplayScreen>
     setState(() {
       _feedbackType = feedbackType;
       _showingFeedback = true;
+      _isBackgroundAnimating = true;
+
+      // Set background color based on feedback type
+      if (feedbackType == "correct") {
+        _backgroundColor = Colors.green.withOpacity(0.3);
+      } else if (feedbackType == "pass") {
+        _backgroundColor = Colors.orange.withOpacity(0.3);
+      }
     });
 
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -145,6 +157,8 @@ class _GameplayScreenState extends State<GameplayScreen>
       setState(() {
         _feedbackType = null;
         _showingFeedback = false;
+        _isBackgroundAnimating = false;
+        _backgroundColor = Colors.transparent;
         _currentWordIndex = (_currentWordIndex + 1) % _currentWords.length;
         if (_currentWordIndex == 0 && _currentWords.length > 1) {
           _currentWords.shuffle();
@@ -229,110 +243,122 @@ class _GameplayScreenState extends State<GameplayScreen>
                   end: Alignment.bottomLeft,
                 ),
               ),
-              child: Stack(
-                children: [
-                  // Instructions
-                  _buildInstructions(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: _isBackgroundAnimating
+                      ? _backgroundColor
+                      : Colors.transparent,
+                ),
+                child: Stack(
+                  children: [
+                    // Instructions
+                    _buildInstructions(),
 
-                  // Feedback Overlay
-                  if (_showingFeedback && _feedbackType != null)
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _feedbackType == "correct"
-                              ? Colors.green.withOpacity(0.8)
-                              : Colors.orange.withOpacity(0.8),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          _feedbackType == "correct" ? "CORRECT!" : "PASS!",
-                          style: const TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                blurRadius: 10,
-                                color: Colors.black45,
-                                offset: Offset(2, 2),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  // Word
-                  Center(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder: (child, animation) {
-                        return ScaleTransition(
-                          scale: CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutBack,
-                          ),
-                          child: FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          _currentWords[_currentWordIndex],
-                          key: ValueKey<int>(_currentWordIndex),
-                          style: Theme.of(context).textTheme.displayLarge
-                              ?.copyWith(
-                                fontSize: 90,
+                    // Feedback Overlay
+                    if (_showingFeedback && _feedbackType != null)
+                      Align(
+                        alignment: const Alignment(0, 0.8),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 100.0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _feedbackType == "correct"
+                                  ? Colors.green.withOpacity(0.8)
+                                  : Colors.orange.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              _feedbackType == "correct" ? "CORRECT!" : "PASS!",
+                              style: const TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
                                 color: Colors.white,
-                                shadows: const [
+                                shadows: [
                                   Shadow(
-                                    blurRadius: 10.0,
-                                    color: Colors.black38,
-                                    offset: Offset(3.0, 3.0),
+                                    blurRadius: 10,
+                                    color: Colors.black45,
+                                    offset: Offset(2, 2),
                                   ),
                                 ],
                               ),
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
 
-                  // Timer
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 30.0),
-                      child: Text(
-                        '${_remainingSeconds ~/ 60}:${(_remainingSeconds % 60).toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: 50,
-                          fontWeight: FontWeight.bold,
-                          color: _remainingSeconds <= 10
-                              ? Colors.redAccent.shade400
-                              : Colors.white,
-                          shadows: _remainingSeconds <= 10
-                              ? const [
-                                  Shadow(
-                                    blurRadius: 8.0,
-                                    color: Colors.white,
-                                    offset: Offset(0, 0),
-                                  ),
-                                ]
-                              : [],
+                    // Word
+                    Center(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        transitionBuilder: (child, animation) {
+                          return ScaleTransition(
+                            scale: CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutBack,
+                            ),
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _currentWords[_currentWordIndex],
+                            key: ValueKey<int>(_currentWordIndex),
+                            style: Theme.of(context).textTheme.displayLarge
+                                ?.copyWith(
+                                  fontSize: 90,
+                                  color: Colors.white,
+                                  shadows: const [
+                                    Shadow(
+                                      blurRadius: 10.0,
+                                      color: Colors.black38,
+                                      offset: Offset(3.0, 3.0),
+                                    ),
+                                  ],
+                                ),
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+
+                    // Timer
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 30.0),
+                        child: Text(
+                          '${_remainingSeconds ~/ 60}:${(_remainingSeconds % 60).toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            fontSize: 50,
+                            fontWeight: FontWeight.bold,
+                            color: _remainingSeconds <= 10
+                                ? Colors.redAccent.shade400
+                                : Colors.white,
+                            shadows: _remainingSeconds <= 10
+                                ? const [
+                                    Shadow(
+                                      blurRadius: 8.0,
+                                      color: Colors.white,
+                                      offset: Offset(0, 0),
+                                    ),
+                                  ]
+                                : [],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },

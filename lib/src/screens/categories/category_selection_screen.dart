@@ -36,7 +36,7 @@ class CategorySelectionScreen extends StatelessWidget {
                       final category = allCategories[index];
 
                       return Card(
-                        color: Colors.black,
+                        color: Theme.of(context).colorScheme.surface,
                         elevation: 8,
                         margin: const EdgeInsets.symmetric(vertical: 5.0),
                         child: Slidable(
