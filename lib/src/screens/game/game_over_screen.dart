@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:what/src/models/game_history.dart';
 import 'package:what/src/services/game_settings.dart';
+import 'package:what/src/services/game_history_service.dart';
 import 'package:what/src/services/unlocked_orientation_mixin.dart';
 import 'package:what/src/widgets/score_display.dart';
 import 'package:what/src/widgets/tempo_button.dart';
@@ -14,6 +16,66 @@ class GameOverScreen extends StatefulWidget {
 
 class _GameOverScreenState extends State<GameOverScreen>
     with UnlockedOrientationMixin {
+  @override
+  void initState() {
+    super.initState();
+    // Use a post-frame callback to ensure the widget is fully built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _saveGameHistory();
+    });
+  }
+
+  void _saveGameHistory() async {
+    try {
+      final gameSettings = Provider.of<GameSettings>(context, listen: false);
+      print('GameOverScreen: Attempting to save game history...');
+      print('GameOverScreen: Category: ${gameSettings.selectedCategory?.name}');
+      print(
+        'GameOverScreen: Correct: ${gameSettings.correctAnswers}, Passes: ${gameSettings.passes}',
+      );
+      print('GameOverScreen: Game Duration: ${gameSettings.gameDuration}');
+
+      if (gameSettings.selectedCategory != null) {
+        final gameHistory = GameHistory(
+          playedAt: DateTime.now(),
+          categoryName: gameSettings.selectedCategory!.name,
+          correctAnswers: gameSettings.correctAnswers,
+          passes: gameSettings.passes,
+          gameDuration: gameSettings.gameDuration,
+          totalScore: GameHistory.calculateScore(
+            gameSettings.correctAnswers,
+            gameSettings.passes,
+            gameSettings.gameDuration,
+          ),
+          isCustomCategory: gameSettings.selectedCategory!.isCustom,
+        );
+
+        print(
+          'GameOverScreen: Created GameHistory object: ${gameHistory.categoryName}',
+        );
+        print(
+          'GameOverScreen: GameHistory duration: ${gameHistory.gameDuration}',
+        );
+
+        await GameHistoryService.saveGameResult(gameHistory);
+        print(
+          'GameOverScreen: Game history saved successfully: ${gameHistory.categoryName} - Score: ${gameHistory.totalScore}',
+        );
+
+        // Test: Try to retrieve the history immediately after saving
+        final allHistory = GameHistoryService.getAllHistory();
+        print(
+          'GameOverScreen: Total games in history after save: ${allHistory.length}',
+        );
+      } else {
+        print('GameOverScreen: No category selected, cannot save game history');
+      }
+    } catch (e, stackTrace) {
+      print('GameOverScreen: Error saving game history: $e');
+      print('GameOverScreen: Stack trace: $stackTrace');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final gameSettings = Provider.of<GameSettings>(context);

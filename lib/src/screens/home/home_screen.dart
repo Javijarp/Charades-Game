@@ -93,6 +93,15 @@ class HomeScreen extends StatelessWidget {
                     icon: Icons.list_alt,
                   ),
                   TempoButton(
+                    text: 'HISTORY',
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/history');
+                    },
+                    isPrimary: false,
+                    backgroundColor: Theme.of(context).colorScheme.tertiary,
+                    icon: Icons.history,
+                  ),
+                  TempoButton(
                     text: 'HOW TO PLAY',
                     onPressed: () {
                       Navigator.pushNamed(context, '/howToPlay');

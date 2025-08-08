@@ -98,6 +98,17 @@ class CategorySelectionScreen extends StatelessWidget {
                             context,
                           ).colorScheme.tertiary, // Blue
                         ),
+                        const SizedBox(height: 15),
+                        TempoButton(
+                          text: 'HISTORY',
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/history');
+                          },
+                          icon: Icons.history,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.secondary,
+                        ),
                         const SizedBox(height: 20),
                         Text(
                           'Choose from predefined categories or create your own!',

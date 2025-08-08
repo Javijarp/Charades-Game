@@ -4,6 +4,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart'; // For State Management
 import 'package:what/core/color.dart';
 import 'package:what/src/models/category.dart';
+import 'package:what/src/models/game_history.dart';
+import 'package:what/src/models/duration_adapter.dart';
 import 'package:what/src/screens/categories/category_selection_screen.dart';
 import 'package:what/src/screens/categories/create_custom_category_screen.dart';
 import 'package:what/src/screens/categories/more_categories_screen.dart';
@@ -11,6 +13,7 @@ import 'package:what/src/screens/game/countdown_screen.dart';
 import 'package:what/src/screens/game/game_over_screen.dart';
 import 'package:what/src/screens/game/game_setup_screen.dart';
 import 'package:what/src/screens/game/gameplay_screen.dart';
+import 'package:what/src/screens/game/history_screen.dart';
 import 'package:what/src/screens/game/how_to_play_screen.dart';
 import 'package:what/src/screens/home/home_screen.dart';
 import 'package:what/src/services/game_settings.dart';
@@ -23,9 +26,14 @@ void main() async {
 
   await Hive.initFlutter();
   Hive.registerAdapter(CategoryAdapter());
+  Hive.registerAdapter(GameHistoryAdapter());
+  Hive.registerAdapter(DurationAdapter());
 
   if (!Hive.isBoxOpen('categories')) {
     await Hive.openBox<Category>('categories');
+  }
+  if (!Hive.isBoxOpen('game_history')) {
+    await Hive.openBox<GameHistory>('game_history');
   }
 
   CustomCategoryService().addPredefinedCategories();
@@ -222,6 +230,7 @@ class TempoApp extends StatelessWidget {
         routes: {
           '/': (context) => const HomeScreen(),
           '/categorySelection': (context) => CategorySelectionScreen(),
+          '/categories': (context) => CategorySelectionScreen(),
           '/createCategory': (context) => const CreateCustomCategoryScreen(),
           '/gameSetup': (context) => const GameSetupScreen(),
           '/howToPlay': (context) => const HowToPlayScreen(),
@@ -229,6 +238,7 @@ class TempoApp extends StatelessWidget {
           '/gameplay': (context) => GameplayScreen(),
           '/gameOver': (context) => const GameOverScreen(),
           '/moreCategories': (context) => const MoreCategoriesScreen(),
+          '/history': (context) => const HistoryScreen(),
         },
       ),
     );

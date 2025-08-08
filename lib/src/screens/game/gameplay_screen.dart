@@ -258,9 +258,9 @@ class _GameplayScreenState extends State<GameplayScreen>
                     // Feedback Overlay
                     if (_showingFeedback && _feedbackType != null)
                       Align(
-                        alignment: const Alignment(0, 0.8),
+                        alignment: const Alignment(0, 4),
                         child: Padding(
-                          padding: const EdgeInsets.only(bottom: 100.0),
+                          padding: const EdgeInsets.only(bottom: 185.0),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
